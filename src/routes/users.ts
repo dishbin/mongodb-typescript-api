@@ -1,14 +1,20 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { QueryConfig, QueryResult, PoolClient } from 'pg';
 import { query, getClient } from '../db/index.js';
-import { hashSync, compareSync, genSaltSync } from 'bcrypt';
+import { hashSync, compareSync } from 'bcrypt';
+import { generateToken } from '../utils/jwtService.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+interface UserData {
+  id: string,
+  name: string
+}
+
 const router = express.Router();
 
-router.post('/email', async (req: Request, res: Response): Promise<any> => {
+router.post('/email', async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   let queryConfig: QueryConfig = {
     text: 'SELECT id, email FROM users WHERE email = $1',
     values: [req.body.email]
@@ -21,7 +27,7 @@ router.post('/email', async (req: Request, res: Response): Promise<any> => {
   };
 });
 
-router.post('/name', async (req: Request, res: Response): Promise<any> => {
+router.post('/name', async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   let queryConfig: QueryConfig = {
     text: 'SELECT id, name FROM users WHERE name = $1',
     values: [req.body.name]
@@ -34,7 +40,7 @@ router.post('/name', async (req: Request, res: Response): Promise<any> => {
   }    
 });
 
-router.post('/create', async (req: Request, res: Response): Promise<any> => {
+router.post('/create', async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   let newUserValues: string[] = [];
   ['name', 'email'].map(key => newUserValues.push(req.body[key]));
   newUserValues.push(await hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS)));
@@ -43,20 +49,25 @@ router.post('/create', async (req: Request, res: Response): Promise<any> => {
     values: newUserValues
   };
   let poolClient: PoolClient = await getClient();
-  let result: QueryResult = await poolClient.query(queryConfig);
-  if (result.rowCount == 1) {
-    queryConfig = {
-      text: 'SELECT id, name FROM users WHERE name = $1 AND email = $2 LIMIT 1',
-      values: newUserValues.slice(2);
-    };
-  } else {
-    res.json({ code: 500, message: 'could not create new user'});
-    return;
-  }
-  result = await poolClient.query(queryConfig);
-  if (result.rowCount == 1) {
-    res.json({ code: 201, data: result.rows[0], success: true, message: 'new user successfully created' });
-  } else {
+  try {
+    let result: QueryResult = await poolClient.query(queryConfig);
+    if (result.rowCount == 1) {
+      queryConfig = {
+        text: 'SELECT id, name FROM users WHERE name = $1 AND email = $2 LIMIT 1',
+        values: newUserValues.slice(0,2)
+      };
+    } else {
+      throw new Error();
+    }
+    result = await poolClient.query(queryConfig);
+    if (result.rowCount == 1) {
+      let userData: UserData = result.rows[0];
+      let token: string = generateToken(userData);
+      res.json({ code: 201, data: userData, token: token, success: true, message: 'new user successfully created' });
+    } else {
+      throw new Error();
+    }
+  } catch (e: any) {
     res.json({ code: 500, message: 'could not create new user' });
   }
   poolClient.release();
