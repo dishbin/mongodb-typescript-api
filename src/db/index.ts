@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const pool = new Pool({
+const pool: Pool = new Pool({
   user: process.env.PGUSER,
   host: process.env.PGHOST,
   database: process.env.PGDATABASE,
@@ -11,12 +11,8 @@ const pool = new Pool({
   port: parseInt(process.env.PGPORT)
 });
 
-// export async function query (text: string, params: any[]): Promise<QueryResult> {
-//  return await pool.query(text, params);
-// };
-
-export async function query (queryConfig: QueryConfig): Promise<QueryResult> {
-  return await pool.query(queryConfig);
+export async function query (text: string, params: any[]): Promise<QueryResult> {
+  return await pool.query(text, params);
 };
 
 export async function getClient (): Promise<PoolClient> {
