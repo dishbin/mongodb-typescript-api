@@ -1,5 +1,6 @@
 import jwt, { Secret, JwtPayload } from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
+import type { NewUserData } from '../types/index.d.ts';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -16,11 +17,11 @@ interface AuthenticatedRequest extends Request {
 const SECRET: Secret = process.env.JWT_SECRET;
 const EXPIRATION: string = process.env.JWT_EXPIRATION;
 
-export function generateToken(data: UserData): string {
+export const generateToken = (data: UserData): string => {
   return jwt.sign(data, SECRET, { expiresIn: EXPIRATION });
 };
 
-export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<any> {
+export const authenticate = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     let token = req.header('Authorization').replace('Bearer: ', '');
     if (!token) {
@@ -30,6 +31,6 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     (req as AuthenticatedRequest).token = decodedToken;
     next();
  } catch (e: any) {
-    res.json({ code: 401, message: 'authenticate failed' });
+    res.json({ code: 401, message: 'authentication failed' });
  }
 };
