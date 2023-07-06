@@ -1,53 +1,29 @@
-import { query } from '../db/index.js';
-import { QueryResult } from 'pg';
-
-interface UserData {
-  name: string,
-  id: string
-};
+import { collections } from '../db';
+import { User } from '../models';
+import { ObjectId } from 'mongodb';
 
 interface UpdateDocument {
   [key: string]: any
 };
 
-export const getAllUsers = async (): Promise<UserData[]>  => {
-  let result: QueryResult = await query('SELECT id, name FROM users', []);
-  if (result.rowCount !== 0) {
-    return result.rows;
-  };
-  return [];
+const projection = {
+  hash: 0
 };
 
-export const getOneUserById = async (id: string): Promise<any> => {
-  let result: QueryResult = await query('SELECT id, name FROM users WHERE id = $1 LIMIT 1', [id]);
-  if (result.rowCount !== 0) {
-    return result.rows[0];
-  }
-  return null;
+export const getAllUsers = async (): Promise<User[]>  => {
+  return (await collections.users.find({}).project(projection).toArray()) as User[];
+};
+
+export const getOneUserById = async (id: string): Promise<User> => {
+  return (await collections.users.findOne({ _id: new ObjectId(id) })) as User;
 };
 
 export const updateOneUserById = async (id: string, updateDocument: UpdateDocument): Promise<boolean> => {
-  let paramCount: number = 0;
-  let paramsEntries: Array<any> = Object.entries(updateDocument);
-  let params: any[] = [];
-  let queryText: string = 'UPDATE users SET ';
-  for (let i: number = 0; i < paramsEntries.length; i++) {
-    queryText += `${paramsEntries[i][0]}=$${++paramCount}`;
-    params.push(paramsEntries[i][1]);
-  }
-  queryText += ` WHERE id = $${++paramCount}`;
-  params.push(id);
-  let result: QueryResult = await query(queryText, params);
-  if (result.rowCount === 1) {
-    return true;
-  }
-  return false;
+  let result = await collections.users.updateOne({ _id: new ObjectId(id) }, { $set: updateDocument}, {});
+  return (result.modifiedCount === 1) ? true : false;
 };
 
 export const deleteOneUserById = async (id: string): Promise<boolean> => {
-  let result: QueryResult = await query('DELETE FROM users WHERE id = $1', [id]);
-  if (result.rowCount === 1) {
-    return true;
-  }
-  return false;
+  let result = await collections.users.deleteOne({ _id: new ObjectId(id) });
+  return (result.deletedCount === 1) ? true : false;
 };

@@ -1,10 +1,10 @@
 import express, { Router } from 'express';
-import * as signup from '../controllers/signup.controller.js';
+import * as signup from '../controllers/signup.controller';
 
 const router: Router = express.Router();
 
-router.post('/email', signup.isEmailUnique);
-router.post('/name', signup.isUserNameUnique);
+router.get('/email/:email', signup.isEmailUnique);
+router.get('/name/:name', signup.isUserNameUnique);
 router.post('/create', signup.createUser);
 
 export default router;

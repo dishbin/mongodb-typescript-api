@@ -1,12 +1,13 @@
 import express from 'express';
-import { query, getClient } from './db/index.js';
-import { mountRoutes } from './routes/index.js';
+import { connectToDatabase } from './db';
+import { mountRoutes } from './routes';
 
 const app = express();
 const port = process.env.SERVER_PORT;
 
 app.use(express.json());
 
+connectToDatabase();
 mountRoutes(app);
 
 app.get('/', (req, res) => {

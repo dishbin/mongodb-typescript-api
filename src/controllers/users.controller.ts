@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { getAllUsers, getOneUserById, updateOneUserById, deleteOneUserById } from '../services/users.service.js';
+import { getAllUsers, getOneUserById, updateOneUserById, deleteOneUserById } from '../services/users.service';
+import { User } from '../models';
 
 interface UserData {
    name: string,
@@ -7,7 +8,7 @@ interface UserData {
 };
 
 export const getAll = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-   let result: UserData[] = await getAllUsers();
+   let result: User[] = await getAllUsers();
    if (result.length > 0) {
       res.json({ code: 200, success: true, data: result });
       return;
@@ -16,7 +17,7 @@ export const getAll = async (req: Request, res: Response, next: NextFunction): P
 };
 
 export const getOne = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-   let result: UserData | null = await getOneUserById(req.params.id);
+   let result: User = await getOneUserById(req.params.id);
    if (result) {
       res.json({ code: 200, success: true, data: result });
       return;
@@ -25,9 +26,9 @@ export const getOne = async (req: Request, res: Response, next: NextFunction): P
 };
 
 export const updateOne = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-   let result: boolean = await updateOneUserById(req.params.id, req.body);
-   if (result) {
-      (result as any) = await getOneUserById(req.params.id);
+   let updateResult: boolean = await updateOneUserById(req.params.id, req.body);
+   if (updateResult) {
+      let result: User = await getOneUserById(req.params.id);
       res.json({ code: 204, success: true, data: result });
       return;
    }

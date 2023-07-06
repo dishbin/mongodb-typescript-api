@@ -1,8 +1,9 @@
 import {Request, Response, NextFunction } from 'express';
-import { query } from '../db/index.js';
-import { QueryResult } from 'pg';
+import { collections } from '../db';
+import { User } from '../models';
 import { compareSync } from 'bcrypt';
-import { generateToken } from './jwt.service.js';
+import { generateToken } from './jwt.service';
+
 
 interface LoginCredentials {
   name: string,
@@ -10,20 +11,19 @@ interface LoginCredentials {
 };
 
 export const checkUserCredentials = async (data: LoginCredentials) => {
-  let result: QueryResult = await query('SELECT id, name, pass_hash FROM users WHERE name = $1 LIMIT 1', [data.name]);
-  if (result.rowCount == 0) {
+  let result: User = (await collections.users.findOne({ name: data.name })) as User;
+  if (!result) {
     return { success: false };
   }
-  let resultData = result.rows[0];
-  let compareResult: boolean = await compareSync(data.password, resultData.pass_hash);
+  let compareResult: boolean = await compareSync(data.password, result.hash);
   if (!compareResult) {
     return { success: false };
   }
-  let token = generateToken({ name: resultData.name, id: resultData.id });
+  let token = generateToken({ name: result.name, id: result._id.toString() });
   return {
     success: true,
-    name: resultData.name,
-    id: resultData.id,
+    name: result.name,
+    id: result._id.toString(),
     token: token
   }
 };

@@ -1,9 +1,10 @@
 import express from 'express';
 import { Application } from 'express';
 
-import signup from './signup.route.js';
-import login from './login.route.js';
-import users from './users.route.js';
+import signup from './signup.route';
+import login from './login.route';
+import users from './users.route';
+
 
 export function mountRoutes(app: Application): void {
   app.use('/api/signup', signup);

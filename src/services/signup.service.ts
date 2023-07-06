@@ -1,25 +1,30 @@
-import { QueryResult } from 'pg';
-import { query } from '../db/index.js';
 import { hashSync } from 'bcrypt';
-import type { NewUserPayload, NewUserData, UserCreationResult } from '../types/index.d.ts';
+import { collections } from '../db';
+import { User } from '../models';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-export const insertNewUser = async (data: NewUserPayload): Promise<boolean> => {
-  let newUserValues: string[] = [
-    data.name,
-    data.email,
-    await hashSync(data.password, parseInt(process.env.SALT_ROUNDS))
-  ];
+interface NewUserPayload {
+  name: string,
+  email: string,
+  password: string
+}
+
+export const insertNewUser = async (data: NewUserPayload): Promise<any> => {
+  let newUserDocument: { [key: string]: string } = {
+    name: data.name,
+    email: data.email,
+    hash: await hashSync(data.password, parseInt(process.env.SALT_ROUNDS))
+  };
   try {
-    let result: QueryResult = await query('INSERT INTO users (name, email, pass_hash) VALUES ($1, $2, $3)', newUserValues);
-    if (result.rowCount === 1) {
-      return true;
-    } 
+    let result = await collections.users.insertOne(newUserDocument);
+    if (result.acknowledged) {
+      return ({ _id: result.insertedId, name: newUserDocument.name }) as User;
+    }
     throw new Error();
   } catch (e: any) {
     console.log('error creating new user');
-    return false;
-  } 
+    return null;
+  }
 }; 

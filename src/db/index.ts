@@ -1,20 +1,20 @@
-import { Pool, QueryResult, PoolClient, QueryConfig } from 'pg';
+import { MongoClient, Db, Collection } from 'mongodb';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const pool: Pool = new Pool({
-  user: process.env.PGUSER,
-  host: process.env.PGHOST,
-  database: process.env.PGDATABASE,
-  password: process.env.PGPASSWORD,
-  port: parseInt(process.env.PGPORT)
-});
+interface GlobalCollectionsObject{
+  [key: string]: Collection
+}
 
-export async function query (text: string, params: any[]): Promise<QueryResult> {
-  return await pool.query(text, params);
+export const collections: GlobalCollectionsObject = {};
+
+export const connectToDatabase = async(): Promise<void> => {
+  let client = new MongoClient(process.env.CONNECTION_STRING);
+  await client.connect();
+  let db: Db = await client.db(process.env.DB_NAME);
+  process.env.COLLECTIONS_LIST.split(',').forEach(collection => {
+    collections[collection] = db.collection(collection);
+  });
 };
 
-export async function getClient (): Promise<PoolClient> {
-  return await pool.connect();
-} 

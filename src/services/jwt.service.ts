@@ -1,6 +1,5 @@
 import jwt, { Secret, JwtPayload } from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import type { NewUserData } from '../types/index.d.ts';
 import dotenv from 'dotenv';
 
 dotenv.config();
